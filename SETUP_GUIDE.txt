@@ -1,0 +1,424 @@
+================================================================
+ NOTE (v2.1): This guide covers LOCAL setup and predates the
+ deployment changes. For going LIVE read DEPLOYMENT.md.
+ Differences from the text below:
+  * Copy backend/.env.example to backend/.env (no .env is bundled).
+  * Email: BREVO_API_KEY + EMAIL_FROM is recommended for hosting
+    (Gmail SMTP is blocked on Render's free tier). Gmail SMTP still
+    works locally: set EMAIL_PROVIDER=smtp.
+  * AI model is set by ANTHROPIC_MODEL (default claude-sonnet-5-5).
+================================================================
+
+╔══════════════════════════════════════════════════════════════════╗
+║           HerGuardian v2 — Complete Setup Guide                  ║
+║           MERN Stack · 10 Modules · AI-Powered                   ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Follow EVERY step in order. Do not skip any step.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — VERIFY NODE.JS IS INSTALLED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open Command Prompt (Windows) or Terminal (Mac/Linux) and run:
+  node --version    → Should show v18.x.x or higher
+  npm --version     → Should show 9.x.x or higher
+
+If not installed: https://nodejs.org → Download LTS version
+
+Also install nodemon globally:
+  npm install -g nodemon
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — SET UP MONGODB ATLAS (Free Database)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to https://cloud.mongodb.com → Sign up free (use Google)
+2. Create a NEW project → Name it "HerGuardian"
+3. Build a Database → Choose "Free" (M0) tier → Create
+4. Wait ~2 minutes for cluster to provision
+5. Click "Connect" → "Drivers" → Copy the connection string
+   It looks like: mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/
+6. Replace <password> with YOUR actual password
+7. Add "/herguardian" at the end: ...mongodb.net/herguardian
+8. NETWORK ACCESS → Add IP Address → "Allow access from anywhere" (0.0.0.0/0)
+   (Important! Without this, connection will be refused)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — SET UP GMAIL APP PASSWORD (for Email SOS Alerts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IMPORTANT: Use a PERSONAL Gmail account (not institutional/college Gmail).
+College Gmail accounts block App Passwords by admin policy.
+
+1. Sign in to your personal Gmail at gmail.com
+2. Go to: myaccount.google.com → Security
+3. Under "How you sign in to Google" → Enable "2-Step Verification"
+   (Must be ON before App Passwords work)
+4. Go back to Security → Search "App passwords" in the page
+   OR go to: myaccount.google.com/apppasswords
+5. App name: "HerGuardian" → Click "Create"
+6. Google shows a 16-character code like: abcd efgh ijkl mnop
+7. Copy it WITHOUT spaces: abcdefghijklmnop
+8. You'll use this in .env as GMAIL_APP_PASSWORD
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — SET UP TWILIO (for SMS SOS Alerts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Free trial available — no credit card needed initially.
+
+1. Go to https://www.twilio.com → Sign up free
+2. Verify your phone number during signup
+3. Go to Console → Account Info:
+   - Account SID: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   - Auth Token: (click to reveal)
+4. Get a free phone number: Phone Numbers → Manage → Buy a number
+5. Choose any US number that supports SMS
+   Your free number looks like: +1XXXXXXXXXX
+
+IMPORTANT FREE TRIAL LIMITATION:
+→ Free Twilio can ONLY send SMS to "Verified Caller IDs"
+→ To test: Console → Phone Numbers → Verified Caller IDs → Add numbers
+→ Add your team members' phone numbers here for testing
+→ For production: Upgrade to paid tier ($15 credit to start)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 5 — GET ANTHROPIC API KEY (for AI Legal Chatbot + Health Insights)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to https://console.anthropic.com → Sign up
+2. API Keys → Create Key → Copy it
+3. Format: sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4. Add $5 credit to enable API calls (very cheap — ~$0.003 per message)
+5. Paste in .env as ANTHROPIC_API_KEY
+
+NOTE: Without this key, the AI Legal Chat and Smart Health Insights
+tabs will show errors. All other features (SOS, health tracking, forum,
+legal info, map) work WITHOUT the Anthropic key.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 6 — CONFIGURE THE .env FILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open backend/.env in a text editor and fill in ALL values:
+
+  MONGO_URI=mongodb+srv://youruser:yourpass@cluster0.xxxx.mongodb.net/herguardian
+  JWT_SECRET=herguardian_any_long_random_secret_string_here_2026
+  JWT_EXPIRE=7d
+  PORT=5000
+  CLIENT_URL=http://localhost:5173
+
+  TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  TWILIO_AUTH_TOKEN=your_auth_token
+  TWILIO_PHONE_NUMBER=+1XXXXXXXXXX
+
+  GMAIL_USER=yourpersonalgmail@gmail.com
+  GMAIL_APP_PASSWORD=abcdefghijklmnop
+
+  ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
+
+SAVE the file. Never push this file to GitHub (it's in .gitignore).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 7 — INSTALL BACKEND DEPENDENCIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open Terminal/Command Prompt:
+  cd herguardian_updated/backend
+  npm install
+
+You should see "added X packages" and a node_modules folder appear.
+This installs: express, mongoose, twilio, nodemailer, axios, bcryptjs,
+jsonwebtoken, cors, express-rate-limit, express-validator, dotenv, nodemon.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 8 — START THE BACKEND SERVER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In the backend folder:
+  npm run dev
+
+You should see:
+  🌸 HerGuardian v2 running on http://localhost:5000
+  ✅ MongoDB Connected: cluster0.xxxxx.mongodb.net
+
+TEST IT: Open browser → http://localhost:5000/api/ping
+Should return: {"message":"🌸 HerGuardian v2 server running!"}
+
+If you see "MongoDB Connection Error":
+  → Re-check MONGO_URI in .env
+  → Make sure IP 0.0.0.0/0 is whitelisted in MongoDB Atlas Network Access
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 9 — INSTALL FRONTEND DEPENDENCIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open a NEW Terminal window (keep backend running!):
+  cd herguardian_updated/frontend
+  npm install
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 10 — START THE FRONTEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In the frontend terminal:
+  npm run dev
+
+You should see:
+  VITE v5.x.x  ready in xxx ms
+  ➜  Local: http://localhost:5173/
+
+Open browser → http://localhost:5173
+🎉 HerGuardian is running!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 11 — TEST ALL FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. REGISTER: Go to /auth → Create Account → fill all fields
+2. LOGIN: Use the same credentials
+3. DASHBOARD: You should see the full dashboard with 8 nav items
+4. ADD CONTACTS: Profile tab → Add 1-2 trusted contacts → Save
+5. TEST SOS: SOS tab → click "SEND SOS NOW"
+   → Should send SMS + email to your contacts
+   → Check sosHistory for delivery status
+6. VOICE SOS: SOS tab → "Enable Voice SOS" → say "help me"
+   → Works on Chrome/Edge only (not Firefox)
+7. HEALTH LOG: Health Hub → log a period start date → Save
+8. MOOD LOG: Health Hub → pick a mood → Save
+9. AI INSIGHTS: Health Hub → "Get My Insights" (needs Anthropic key)
+10. AI LEGAL CHAT: AI Assistant tab → ask "What is the POSH Act?"
+11. FORUM: Forum tab → Create a post (will appear after moderation)
+12. SAFETY MAP: Safety Map tab → Allow location → Report a zone
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HTTPS SETUP (Required for Camera + Voice SOS on Mobile)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Camera (evidence capture) and Voice SOS require HTTPS on mobile devices.
+For local dev with HTTPS:
+
+1. In frontend/package.json, the "dev:https" script is already set up
+2. In frontend/vite.config.js, uncomment the basicSsl lines:
+   - Line: import basicSsl from '@vitejs/plugin-basic-ssl';
+   - Line: basicSsl(),  in plugins array
+3. Run: npm run dev:https
+4. Browser will warn about self-signed certificate → Click "Advanced" → "Proceed"
+5. Now camera and voice SOS work on mobile too
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMMON ERRORS AND FIXES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ "MongoDB Connection Error" or "ECONNREFUSED"
+→ Check MONGO_URI spelling in .env
+→ MongoDB Atlas → Network Access → Add 0.0.0.0/0
+→ Check username/password in the URI (no special chars unescaped)
+
+❌ "Cannot find module 'axios'"
+→ You forgot npm install in the backend folder
+→ Run: npm install (in backend directory)
+
+❌ SMS not sending
+→ Twilio free trial: add recipients as Verified Caller IDs first
+→ Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are correct
+→ Check TWILIO_PHONE_NUMBER includes country code (+1XXXXXXXXXX)
+
+❌ Email not sending
+→ Must use PERSONAL Gmail (not college/institutional Gmail)
+→ GMAIL_APP_PASSWORD must be 16 chars with NO spaces
+→ 2-Step Verification must be enabled on that Gmail account
+→ Check GMAIL_USER is the full email (yourname@gmail.com)
+
+❌ AI chatbot returns "temporarily unavailable"
+→ Check ANTHROPIC_API_KEY is set correctly in .env
+→ Make sure you have API credits at console.anthropic.com
+→ Restart the backend after adding the key (Ctrl+C, then npm run dev)
+
+❌ "Port 5000 already in use"
+→ Change PORT=5001 in .env
+→ Also update vite.config.js proxy target to http://localhost:5001
+
+❌ CORS error in browser console
+→ Make sure backend is running on port 5000
+→ CLIENT_URL=http://localhost:5173 in .env
+→ Restart backend after .env changes
+
+❌ Camera/Voice SOS not working
+→ These require HTTPS on most mobile browsers
+→ On desktop Chrome/Edge they work over HTTP (localhost only)
+→ For mobile: use the dev:https setup described above
+
+❌ "Voice SOS not supported in this browser"
+→ SpeechRecognition is Chrome/Edge only — not available on Firefox
+→ Standard tap-to-SOS works on all browsers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FULL PROJECT STRUCTURE (v2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+herguardian_updated/
+├── backend/
+│   ├── config/
+│   │   └── db.js                    ← MongoDB connection
+│   ├── controllers/
+│   │   ├── authController.js        ← Register, Login, Email Verify, Contacts
+│   │   ├── sosController.js (v2)    ← SOS + Gmail SMTP + Evidence photo
+│   │   ├── healthController.js      ← Cycle Tracker + Mood Journal
+│   │   ├── forumController.js       ← Forum posts, likes, replies
+│   │   └── aiController.js (NEW)    ← AI Legal Chatbot + Health Insights
+│   ├── middleware/
+│   │   └── authMiddleware.js        ← JWT token verification
+│   ├── models/
+│   │   ├── User.js                  ← User schema (bcrypt passwords)
+│   │   ├── SOS.js (v2)              ← SOS logs (evidence, triggeredBy)
+│   │   ├── Health.js                ← Cycle + Mood schemas
+│   │   ├── Legal.js                 ← Legal content + helplines
+│   │   └── Forum.js                 ← Forum posts schema
+│   ├── routes/
+│   │   ├── authRoutes.js            ← /api/auth/*
+│   │   ├── sosRoutes.js             ← /api/sos/*
+│   │   ├── healthRoutes.js          ← /api/health/*
+│   │   ├── legalRoutes.js           ← /api/legal/*
+│   │   ├── forumRoutes.js           ← /api/forum/*
+│   │   ├── mapRoutes.js             ← /api/map/*
+│   │   └── aiRoutes.js (NEW)        ← /api/ai/chat, /api/ai/health-insights
+│   ├── .env                         ← All API keys (NEVER commit to git)
+│   ├── package.json                 ← Now includes 'axios'
+│   └── server.js (v2)               ← Registers /api/ai, 10MB body limit
+│
+├── frontend/
+│   └── src/
+│       ├── components/              ← Landing page components (unchanged)
+│       ├── pages/
+│       │   ├── Home.jsx             ← Landing page
+│       │   ├── Auth.jsx             ← Login + Register
+│       │   ├── Dashboard.jsx (v2)   ← FULL dashboard — all 8 tabs wired up
+│       │   └── VerifyEmail.jsx      ← Email verification handler
+│       ├── context/
+│       │   └── AuthContext.jsx      ← Global auth state + JWT storage
+│       ├── services/
+│       │   └── api.js (v2)          ← All API calls + auto JWT interceptor
+│       └── assets/css/
+│           └── global.css           ← Design system
+│
+├── SETUP_GUIDE.txt                  ← This file
+├── README.md                        ← Project overview
+└── .gitignore                       ← Excludes node_modules, .env
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT'S NEW IN v2 (Additions to your original code)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. aiController.js (NEW FILE)
+   → Legal AI Chatbot using Anthropic Claude API
+   → Multi-turn conversation with full legal knowledge base
+   → Smart Health Insights with AI-generated personalised tips
+   → Irregular cycle + sustained low mood anomaly detection
+
+2. aiRoutes.js (NEW FILE)
+   → POST /api/ai/chat
+   → POST /api/ai/health-insights
+
+3. sosController.js (UPGRADED)
+   → Switched from SendGrid → Gmail SMTP (works with free personal Gmail)
+   → Added evidence photo (Base64 JPEG) attached to SOS email
+   → Added 'triggeredBy' field (manual / voice / timer)
+   → Added GPS fallback handling with clear error messages
+
+4. server.js (UPGRADED)
+   → Registers /api/ai route
+   → express.json limit raised to 10MB (for evidence photo Base64)
+
+5. Dashboard.jsx (FULLY REBUILT)
+   → 8 fully wired tabs: Overview, SOS, Health Hub, Legal Info,
+     AI Assistant, Forum, Safety Map, My Profile
+   → Voice SOS (Web Speech API keyword detection)
+   → Auto Evidence Capture (camera → Base64 → email attachment)
+   → AI Legal Chatbot with quick-question shortcuts
+   → Smart Health Insights with AI recommendations
+   → Full cycle + mood logging with live data
+   → Forum with post creation, likes
+   → Safety Map zone reporting
+   → Trusted contacts management
+
+6. Dashboard.module.css (NEW)
+   → Complete responsive CSS for all 8 dashboard tabs
+   → Mobile-first design tested at 375px, 768px, 1280px
+
+7. services/api.js (UPGRADED)
+   → Added aiAPI endpoints
+   → Added Axios interceptor for automatic JWT injection
+
+8. package.json backend (UPGRADED)
+   → Added 'axios' dependency (used in aiController for Claude API calls)
+
+9. .env (UPGRADED)
+   → Added GMAIL_USER, GMAIL_APP_PASSWORD (replaces SendGrid)
+   → Added ANTHROPIC_API_KEY
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API ENDPOINTS REFERENCE (Complete)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AUTH:
+  POST /api/auth/register          → Create account
+  POST /api/auth/login             → Login, get JWT
+  GET  /api/auth/profile           → Get user 🔒
+  PUT  /api/auth/contacts          → Update trusted contacts 🔒
+  GET  /api/auth/verify-email      → Verify email token
+  POST /api/auth/resend-verification → Resend verify email
+
+SOS:
+  POST /api/sos/send               → Send SOS (SMS + Email + GPS) 🔒
+  GET  /api/sos/history            → Past alerts 🔒
+
+HEALTH:
+  POST /api/health/cycle           → Log period 🔒
+  GET  /api/health/cycle           → Get cycles 🔒
+  POST /api/health/mood            → Log mood 🔒
+  GET  /api/health/mood            → Get mood history 🔒
+
+LEGAL:
+  GET  /api/legal                  → Get legal articles
+  GET  /api/legal/helplines        → Get helplines
+
+FORUM:
+  GET  /api/forum                  → Get approved posts
+  POST /api/forum                  → Create post 🔒
+  POST /api/forum/:id/like         → Like/unlike post 🔒
+  POST /api/forum/:id/reply        → Reply to post 🔒
+
+MAP:
+  GET  /api/map/zones              → Get nearby zones (?lat=&lng=)
+  POST /api/map/report             → Report zone 🔒
+
+AI (NEW):
+  POST /api/ai/chat                → Legal AI chatbot 🔒
+  POST /api/ai/health-insights     → Smart health insights 🔒
+
+🔒 = Requires Authorization: Bearer <token> header
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEPLOYMENT (When ready for production)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FRONTEND → Vercel (free)
+  1. Push code to GitHub
+  2. Go to vercel.com → Import Repository → Select frontend folder
+  3. Framework: Vite → Deploy
+  4. Add environment variable: VITE_API_URL=https://your-backend.onrender.com
+
+BACKEND → Render.com (free)
+  1. Go to render.com → New Web Service → Connect GitHub
+  2. Root Directory: herguardian_updated/backend
+  3. Build Command: npm install
+  4. Start Command: node server.js
+  5. Add ALL .env variables in the Environment tab
+
+After deploying:
+  → Update CLIENT_URL in backend env to your Vercel URL
+  → Update Twilio webhook URLs if needed
+  → Test all 10 features end-to-end on the live URL
+  → Upgrade Twilio to paid tier for SMS to all numbers

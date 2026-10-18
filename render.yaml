@@ -1,0 +1,46 @@
+# ======================================================================
+# Render Blueprint — deploys the BACKEND API.
+# Render dashboard → New + → Blueprint → pick your GitHub repo.
+# Values marked `sync: false` are prompted for during setup (secrets are never stored in Git).
+# The FRONTEND is deployed separately on Vercel (see DEPLOYMENT.md).
+# ======================================================================
+services:
+  - type: web
+    name: herguardian-api
+    runtime: node
+    region: singapore          # closest Render region to India
+    plan: free                 # see DEPLOYMENT.md → "Free tier sleeps after 15 min" before relying on it for SOS
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: JWT_SECRET
+        generateValue: true    # Render generates a strong random secret for you
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: CLIENT_URL        # your Vercel URL, no trailing slash (set a temporary value first, fix after frontend deploy)
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: brevo
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: HerGuardian
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
