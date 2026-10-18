@@ -1,4 +1,4 @@
-# 🌸 HerGuardian v2 — Women Safety, Health & Empowerment Platform
+# 🌸 HerGuardian — Women Safety, Health & Empowerment Platform
 
 A full-stack MERN web application with **10 feature modules** across 5 pillars.
 
@@ -108,4 +108,4 @@ Frontend: `VITE_API_URL` (your deployed backend origin) — see `frontend/.env.e
 - Legal facts in the AI system prompt corrected (IPC 498A is now **BNS Section 85**); exact section/penalty claims removed — please still get it reviewed.
 
 ## Team
-**The Techies** — Aryan Tomar, Akshita Bhardwaj, Devika Sharma
+**The Techies** — Aryan Tomar, Akshita Bhardwaj
